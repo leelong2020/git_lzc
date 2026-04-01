@@ -1,6 +1,8 @@
 # lzc
 
 > Lazy Commit — 用 AI 分析 Git 变更，自动生成规范的 commit message。
+>
+> 支持多种 AI 提供商：Anthropic Claude、OpenAI、豆包 (Doubao)、Kimi (Moonshot)、Ollama 本地部署
 
 ---
 
@@ -10,23 +12,34 @@
 npm install -g lzc
 ```
 
----
+## 快速开始
 
-## 使用
+1. **复制配置文件示例**
+   ```bash
+   cp .lzc.example.json .lzc.json
+   ```
 
+2. **编辑配置文件**，设置你的 AI 提供商和 API Key
+
+3. **开始使用**
 ```bash
 git add .
-lzc
+git-lzc
 ```
 
----
+## 功能特性
 
-## 工作流程
+- 🤖 **多 AI 提供商支持** — Claude、OpenAI、豆包、Kimi、Ollama
+- 📝 **自动生成规范 commit** — 支持 Conventional Commits 规范
+- 🌍 **多语言支持** — 中英文 commit message
+- ⚙️ **灵活配置** — 支持项目级和全局配置文件
+- 🔒 **本地部署支持** — 通过 Ollama 使用本地模型，无需联网
+- 🎯 **交互式确认** — 可编辑、确认或重新生成 commit message
 
 ```
 git add .
  ↓
-lzc
+git-lzc
  ↓
 git diff --staged → AI 分析变更 → 生成 commit message
  ↓
@@ -34,8 +47,6 @@ git diff --staged → AI 分析变更 → 生成 commit message
  ↓
 git commit -m "..."
 ```
-
----
 
 ## 输出示例
 
@@ -51,98 +62,82 @@ feat(auth): add OAuth2 login with Google
 
 ## 配置
 
-配置文件路径优先级：`<项目根>/.lzc.json` > `~/.lzc.json`
+### 配置文件
+
+项目支持配置文件来定制 AI 提供商和行为：
+
+```bash
+# 复制示例配置文件
+cp .lzc.example.json .lzc.json
+```
+
+### 配置示例 (`.lzc.json`)
 
 ```json
 {
-  "model": "claude-sonnet-4-20250514",
+  "apiProvider": "ollama",
+  "model": "gemma3:latest",
   "language": "zh",
   "autoCommit": false,
   "commitStyle": "conventional",
-  "apiProvider": "anthropic",
-  "apiKey": "your-api-key",
-  "baseUrl": "optional-custom-endpoint"
+  "baseUrl": "http://127.0.0.1:11434"
 }
 ```
 
-| 字段 | 默认值 | 说明 |
-|------|--------|------|
-| `model` | `claude-sonnet-4-20250514` | 使用的模型 |
-| `language` | `en` | commit message 语言，支持 `en` / `zh` |
-| `autoCommit` | `false` | 跳过确认直接提交 |
-| `commitStyle` | `conventional` | 支持 `conventional` / `free` |
-| `apiProvider` | `anthropic` | API 提供商，支持 `anthropic` / `openai` / `doubao` / `kimi` / `ollama` |
-| `apiKey` | `null` | API Key，也可通过环境变量设置 |
-| `baseUrl` | `null` | 自定义 API 端点（可选） |
+### 配置项说明
 
-### 支持的 AI 提供商
-
-| 提供商 | 环境变量 | 默认端点 |
-|--------|----------|----------|
-| Anthropic | `ANTHROPIC_API_KEY` | https://api.anthropic.com |
-| OpenAI | `OPENAI_API_KEY` | https://api.openai.com |
-| 豆包 (Doubao) | `DOUBAO_API_KEY` | https://ark.cn-beijing.volces.com/api/v3 |
-| Kimi (Moonshot) | `KIMI_API_KEY` | https://api.moonshot.cn/v1 |
-| Ollama | 不需要 | http://localhost:11434 |
+| 配置项 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| `apiProvider` | string | `"anthropic"` | AI 提供商: `ollama`, `openai`, `anthropic`, `doubao`, `kimi` |
+| `model` | string | `"claude-sonnet-4-20250514"` | AI 模型名称 |
+| `language` | string | `"en"` | 输出语言: `zh` (中文), `en` (英文) |
+| `autoCommit` | boolean | `false` | 是否跳过确认直接提交 |
+| `commitStyle` | string | `"conventional"` | Commit 风格: `conventional`, `simple`, `detailed` |
+| `baseUrl` | string | `null` | API 基础 URL (Ollama 默认: `http://127.0.0.1:11434`) |
+| `apiKey` | string | `null` | API 密钥 (可通过环境变量设置) |
 
 ### 环境变量
 
 ```bash
 # Anthropic
-export ANTHROPIC_API_KEY="your-anthropic-key"
+export ANTHROPIC_API_KEY="your-key"
 
 # OpenAI
-export OPENAI_API_KEY="your-openai-key"
+export OPENAI_API_KEY="your-key"
 
-# 豆包 (字节跳动)
-export DOUBAO_API_KEY="your-doubao-key"
+# 豆包
+export DOUBAO_API_KEY="your-key"
 
-# Kimi (Moonshot)
-export KIMI_API_KEY="your-kimi-key"
+# Kimi
+export KIMI_API_KEY="your-key"
 
 # Ollama (可选，自定义地址)
 export OLLAMA_HOST="http://localhost:11434"
 ```
 
-### 配置示例
-
-**使用豆包：**
-```json
-{
-  "apiProvider": "doubao",
-  "model": "doubao-pro-32k",
-  "language": "zh"
-}
-```
-
-**使用 Kimi：**
-```json
-{
-  "apiProvider": "kimi",
-  "model": "moonshot-v1-8k",
-  "language": "zh"
-}
-```
-
-**使用 Ollama（本地）：**
-```json
-{
-  "apiProvider": "ollama",
-  "model": "qwen2.5-coder:7b",
-  "language": "zh"
-}
-```
-
----
-
-## 命令参数
+## 命令用法
 
 ```bash
-lzc              # 标准交互模式
-lzc -y           # 跳过确认，直接提交
-lzc --lang zh    # 指定语言（覆盖配置文件）
-lzc --dry-run    # 只输出 message，不执行 commit
-lzc --model <id> # 指定模型
+git-lzc              # 分析暂存区变更并生成 commit message
+git-lzc -y           # 跳过确认，直接提交
+git-lzc --lang zh    # 指定语言（覆盖配置文件）
+git-lzc --dry-run    # 只输出 message，不执行 commit
+git-lzc --model <id> # 指定模型（覆盖配置文件）
+git-lzc -h           # 显示帮助信息
+```
+
+### 工作流程示例
+
+```bash
+# 1. 暂存变更
+git add .
+
+# 2. 运行 git-lzc 生成 commit
+git-lzc
+
+# 3. 确认或编辑生成的 commit message
+
+# 4. 完成提交
 ```
 
 ---
@@ -150,7 +145,6 @@ lzc --model <id> # 指定模型
 ## 开发
 
 ```bash
-cd code/lzc
 npm install
 npm run build     # 编译 TypeScript
 npm link          # 本地链接测试

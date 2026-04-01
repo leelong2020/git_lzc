@@ -4,7 +4,7 @@
   "description": "Lazy Commit — 用 AI 分析 Git 变更，自动生成规范的 commit message",
   "main": "dist/index.js",
   "bin": {
-    "lzc": "./bin/lzc.js"
+    "git-lzc": "./bin/lzc.js"
   },
   "scripts": {
     "build": "tsc",
