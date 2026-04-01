@@ -17,7 +17,7 @@ program
 
 const options = program.opts();
 
-main(options).catch((error: Error) => {
+main(options).catch((error) => {
   console.error(chalk.red('❌ 错误:'), error.message);
   process.exit(1);
 });
