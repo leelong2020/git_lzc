@@ -1,10 +1,13 @@
+export type ApiProvider = 'anthropic' | 'openai' | 'doubao' | 'kimi' | 'ollama';
+
 export interface LzcConfig {
   model: string;
   language: 'en' | 'zh';
   autoCommit: boolean;
   commitStyle: 'conventional' | 'free';
-  apiProvider: 'anthropic' | 'openai';
+  apiProvider: ApiProvider;
   apiKey?: string;
+  baseUrl?: string;
 }
 
 export interface CliOptions {
@@ -20,6 +23,7 @@ export interface PromptData {
   userPrompt: string;
 }
 
+// Anthropic
 export interface AnthropicMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -32,6 +36,7 @@ export interface AnthropicResponse {
   }>;
 }
 
+// OpenAI
 export interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -43,4 +48,44 @@ export interface OpenAIResponse {
       content: string;
     };
   }>;
+}
+
+// Doubao (字节跳动)
+export interface DoubaoMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface DoubaoResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+}
+
+// Kimi (Moonshot)
+export interface KimiMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface KimiResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+}
+
+// Ollama (本地)
+export interface OllamaMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface OllamaResponse {
+  message: {
+    content: string;
+  };
 }

@@ -59,7 +59,9 @@ feat(auth): add OAuth2 login with Google
   "language": "zh",
   "autoCommit": false,
   "commitStyle": "conventional",
-  "apiProvider": "anthropic"
+  "apiProvider": "anthropic",
+  "apiKey": "your-api-key",
+  "baseUrl": "optional-custom-endpoint"
 }
 ```
 
@@ -69,14 +71,66 @@ feat(auth): add OAuth2 login with Google
 | `language` | `en` | commit message 语言，支持 `en` / `zh` |
 | `autoCommit` | `false` | 跳过确认直接提交 |
 | `commitStyle` | `conventional` | 支持 `conventional` / `free` |
-| `apiProvider` | `anthropic` | API 提供商，`anthropic` 或 `openai` |
+| `apiProvider` | `anthropic` | API 提供商，支持 `anthropic` / `openai` / `doubao` / `kimi` / `ollama` |
+| `apiKey` | `null` | API Key，也可通过环境变量设置 |
+| `baseUrl` | `null` | 自定义 API 端点（可选） |
+
+### 支持的 AI 提供商
+
+| 提供商 | 环境变量 | 默认端点 |
+|--------|----------|----------|
+| Anthropic | `ANTHROPIC_API_KEY` | https://api.anthropic.com |
+| OpenAI | `OPENAI_API_KEY` | https://api.openai.com |
+| 豆包 (Doubao) | `DOUBAO_API_KEY` | https://ark.cn-beijing.volces.com/api/v3 |
+| Kimi (Moonshot) | `KIMI_API_KEY` | https://api.moonshot.cn/v1 |
+| Ollama | 不需要 | http://localhost:11434 |
 
 ### 环境变量
 
 ```bash
+# Anthropic
 export ANTHROPIC_API_KEY="your-anthropic-key"
-# 或
+
+# OpenAI
 export OPENAI_API_KEY="your-openai-key"
+
+# 豆包 (字节跳动)
+export DOUBAO_API_KEY="your-doubao-key"
+
+# Kimi (Moonshot)
+export KIMI_API_KEY="your-kimi-key"
+
+# Ollama (可选，自定义地址)
+export OLLAMA_HOST="http://localhost:11434"
+```
+
+### 配置示例
+
+**使用豆包：**
+```json
+{
+  "apiProvider": "doubao",
+  "model": "doubao-pro-32k",
+  "language": "zh"
+}
+```
+
+**使用 Kimi：**
+```json
+{
+  "apiProvider": "kimi",
+  "model": "moonshot-v1-8k",
+  "language": "zh"
+}
+```
+
+**使用 Ollama（本地）：**
+```json
+{
+  "apiProvider": "ollama",
+  "model": "qwen2.5-coder:7b",
+  "language": "zh"
+}
 ```
 
 ---

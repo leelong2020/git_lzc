@@ -19,7 +19,8 @@ export async function main(options: CliOptions = {}): Promise<void> {
     ...(options.lang && { language: options.lang }),
     ...(options.model && { model: options.model }),
     ...(options.style && { commitStyle: options.style }),
-    apiKey: configManager.getApiKey()
+    apiKey: configManager.getApiKey(),
+    baseUrl: configManager.getBaseUrl()
   };
 
   console.log(chalk.blue('🔍 正在分析暂存区的变更...\n'));
