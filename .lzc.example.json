@@ -1,0 +1,26 @@
+>
+{
+  // API 提供商: ollama, openai, anthropic, gemini 等
+  "apiProvider": "ollama",
+
+  // 模型名称
+  // ollama: gemma3:latest, qwen2.5-coder, llama3 等
+  // openai: gpt-4, gpt-4-turbo, gpt-3.5-turbo 等
+  // anthropic: claude-3-opus, claude-3-sonnet, claude-3-haiku 等
+  "model": "gemma3:latest",
+
+  // 界面语言: zh (中文), en (英文)
+  "language": "zh",
+
+  // 是否自动提交 commit: true 或 false
+  "autoCommit": false,
+
+  // commit 提交风格: conventional, simple, detailed
+  "commitStyle": "conventional",
+
+  // API 基础 URL (ollama 默认: http://127.0.0.1:11434)
+  "baseUrl": "http://127.0.0.1:11434",
+
+  // API 密钥 (使用第三方 API 时需要)
+  // "apiKey": "your-api-key-here"
+}
