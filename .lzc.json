@@ -1,0 +1,7 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "language": "zh",
+  "autoCommit": false,
+  "commitStyle": "conventional",
+  "apiProvider": "anthropic"
+}

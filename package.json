@@ -1,0 +1,41 @@
+{
+  "name": "lzc",
+  "version": "1.0.0",
+  "description": "Lazy Commit — 用 AI 分析 Git 变更，自动生成规范的 commit message",
+  "main": "dist/index.js",
+  "bin": {
+    "lzc": "./bin/lzc.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "prepare": "npm run build",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "git",
+    "commit",
+    "ai",
+    "cli",
+    "lazy",
+    "conventional-commits"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "simple-git": "^3.22.0",
+    "commander": "^12.0.0",
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.6",
+    "axios": "^1.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/inquirer": "^9.0.7",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
