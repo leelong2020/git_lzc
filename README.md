@@ -14,14 +14,19 @@ npm install -g lzc
 
 ## 快速开始
 
-1. **复制配置文件示例**
+1. **创建全局配置文件目录**
    ```bash
-   cp .lzc.example.json .lzc.json
+   mkdir -p ~/.config/git-lzc
    ```
 
-2. **编辑配置文件**，设置你的 AI 提供商和 API Key
+2. **复制配置文件示例到全局配置**
+   ```bash
+   cp .lzc.example.json ~/.config/git-lzc/lzc.json
+   ```
 
-3. **开始使用**
+3. **编辑配置文件**，设置你的 AI 提供商和 API Key
+
+4. **开始使用**
 ```bash
 git add .
 git-lzc
@@ -62,16 +67,28 @@ feat(auth): add OAuth2 login with Google
 
 ## 配置
 
-### 配置文件
+### 配置文件位置
 
-项目支持配置文件来定制 AI 提供商和行为：
+配置文件按照以下优先级读取（优先级从高到低）：
+
+1. **项目级配置**: `<repo-root>/.lzc.json` — 当前项目的特定配置
+2. **全局配置**: `~/.config/git-lzc/lzc.json` — 用户的全局默认配置
+3. **默认配置**: 内置的默认参数
+
+### 初始化全局配置
 
 ```bash
+# 创建配置目录
+mkdir -p ~/.config/git-lzc
+
 # 复制示例配置文件
-cp .lzc.example.json .lzc.json
+cp .lzc.example.json ~/.config/git-lzc/lzc.json
+
+# 编辑配置文件
+vi ~/.config/git-lzc/lzc.json
 ```
 
-### 配置示例 (`.lzc.json`)
+### 配置示例 (`~/.config/git-lzc/lzc.json`)
 
 ```json
 {
@@ -84,13 +101,15 @@ cp .lzc.example.json .lzc.json
 }
 ```
 
+> **注意**: 你可以将配置文件放在项目根目录作为 `.lzc.json`，仅对当前项目生效。
+
 ### 配置项说明
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
 | `apiProvider` | string | `"anthropic"` | AI 提供商: `ollama`, `openai`, `anthropic`, `doubao`, `kimi` |
 | `model` | string | `"claude-sonnet-4-20250514"` | AI 模型名称 |
-| `language` | string | `"en"` | 输出语言: `zh` (中文), `en` (英文) |
+| `language` | string | `"zh"` | 输出语言: `zh` (中文), `en` (英文) |
 | `autoCommit` | boolean | `false` | 是否跳过确认直接提交 |
 | `commitStyle` | string | `"conventional"` | Commit 风格: `conventional`, `simple`, `detailed` |
 | `baseUrl` | string | `null` | API 基础 URL (Ollama 默认: `http://127.0.0.1:11434`) |

@@ -5,11 +5,14 @@ import { LzcConfig, ApiProvider } from './types';
 
 const DEFAULT_CONFIG: LzcConfig = {
   model: 'claude-sonnet-4-20250514',
-  language: 'en',
+  language: 'zh',
   autoCommit: false,
   commitStyle: 'conventional',
   apiProvider: 'anthropic'
 };
+
+const GLOBAL_CONFIG_DIR = path.join(os.homedir(), '.config', 'git-lzc');
+const GLOBAL_CONFIG_PATH = path.join(GLOBAL_CONFIG_DIR, 'lzc.json');
 
 export class Config {
   private config: LzcConfig;
@@ -19,16 +22,22 @@ export class Config {
   }
 
   load(repoRoot: string): void {
-    const globalConfigPath = path.join(os.homedir(), '.lzc.json');
     const localConfigPath = path.join(repoRoot, '.lzc.json');
 
-    if (fs.existsSync(globalConfigPath)) {
+    // 读取全局配置文件
+    if (fs.existsSync(GLOBAL_CONFIG_PATH)) {
       try {
-        const globalConfig = JSON.parse(fs.readFileSync(globalConfigPath, 'utf8'));
+        const globalConfig = JSON.parse(fs.readFileSync(GLOBAL_CONFIG_PATH, 'utf8'));
         this.config = { ...this.config, ...globalConfig };
       } catch (error) {
-        console.warn(`警告: 读取全局配置文件失败: ${(error as Error).message}`);
+        console.warn(`⚠️  读取全局配置文件失败: ${(error as Error).message}`);
       }
+    } else {
+      // 配置文件不存在，显示提示
+      console.log(`ℹ️  未找到全局配置文件: ${GLOBAL_CONFIG_PATH}`);
+      console.log(`   请将配置文件放置在: ${GLOBAL_CONFIG_PATH}`);
+      console.log(`   示例配置文件可参考项目中的 .lzc.example.json`);
+      console.log();
     }
 
     if (fs.existsSync(localConfigPath)) {
@@ -36,13 +45,17 @@ export class Config {
         const localConfig = JSON.parse(fs.readFileSync(localConfigPath, 'utf8'));
         this.config = { ...this.config, ...localConfig };
       } catch (error) {
-        console.warn(`警告: 读取本地配置文件失败: ${(error as Error).message}`);
+        console.warn(`⚠️  读取本地配置文件失败: ${(error as Error).message}`);
       }
     }
   }
 
   get(): LzcConfig {
     return this.config;
+  }
+
+  getGlobalConfigPath(): string {
+    return GLOBAL_CONFIG_PATH;
   }
 
   getApiKey(): string | undefined {
