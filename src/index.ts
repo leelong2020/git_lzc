@@ -29,10 +29,18 @@ export async function main(options: CliOptions = {}): Promise<void> {
   const diffLines = diff.split('\n').length;
   console.log(chalk.gray(`发现约 ${diffLines} 行变更\n`));
 
+  let diffInput = diff;
+  if (diffLines > 300) {
+    const stat = await git.getStagedDiffStat();
+    const truncatedLines = diff.split('\n').slice(0, 200).join('\n');
+    diffInput = `变更统计：\n${stat}\n\n主要变更内容（已截断）：\n${truncatedLines}\n...（后续 ${diffLines - 200} 行已省略）`;
+    console.log(chalk.yellow(`diff 行数过多，已截断为前 200 行并附加变更统计\n`));
+  }
+
   console.log(chalk.blue('🤖 正在生成 commit message...\n'));
 
   const ai = new AIClient(finalConfig);
-  const commitMessage = await ai.generateCommitMessage(diff);
+  const commitMessage = await ai.generateCommitMessage(diffInput);
 
   console.log(chalk.green('生成的 commit message:'));
   console.log(chalk.white('─'.repeat(50)));

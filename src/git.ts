@@ -39,6 +39,15 @@ export class GitHelper {
     }
   }
 
+  async getStagedDiffStat(): Promise<string> {
+    try {
+      const stat = await this.git.diff(['--staged', '--stat']);
+      return stat.trim() || '无统计信息';
+    } catch (error) {
+      return '获取变更统计失败';
+    }
+  }
+
   async getRepoRoot(): Promise<string> {
     try {
       const result = await this.git.revparse(['--show-toplevel']);

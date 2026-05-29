@@ -34,20 +34,27 @@ export class AIClient {
     const prompt = this.buildPrompt(truncatedDiff);
 
     try {
+      let message: string;
       switch (provider) {
         case 'openai':
-          return await this.callOpenAI(prompt, apiKey!);
+          message = await this.callOpenAI(prompt, apiKey!);
+          break;
         case 'anthropic':
-          return await this.callAnthropic(prompt, apiKey!);
+          message = await this.callAnthropic(prompt, apiKey!);
+          break;
         case 'doubao':
-          return await this.callDoubao(prompt, apiKey!);
+          message = await this.callDoubao(prompt, apiKey!);
+          break;
         case 'kimi':
-          return await this.callKimi(prompt, apiKey!);
+          message = await this.callKimi(prompt, apiKey!);
+          break;
         case 'ollama':
-          return await this.callOllama(prompt);
+          message = await this.callOllama(prompt);
+          break;
         default:
           throw new Error(`不支持的 API 提供商: ${provider}`);
       }
+      return this.sanitizeCommitMessage(message);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(`API 调用失败: ${error.response.status} - ${error.response.data?.error?.message || error.message}`);
@@ -86,10 +93,32 @@ export class AIClient {
     }
 
     const userPrompt = isChinese
-      ? `根据以下 Git diff 生成简洁的 commit message，直接输出 message 内容，不要有任何额外说明：\n\n${diff}`
-      : `Generate a concise commit message based on the following Git diff. Output only the message content, no extra explanations:\n\n${diff}`;
+      ? `根据以下 Git diff 生成简洁的 commit message。要求：\n1. 只输出 commit message 纯文本，不要有任何额外说明\n2. 严禁输出代码片段、严禁重复 diff 内容\n3. 不要添加 markdown 代码块标记\n4. 总结变更的核心目的，而不是罗列每行改动\n\nGit diff：\n${diff}`
+      : `Generate a concise commit message based on the following Git diff. Requirements:\n1. Output ONLY the commit message plain text, no extra explanations\n2. NEVER output code snippets or repeat diff content\n3. Do not use markdown code blocks\n4. Summarize the core purpose of the changes, not every line\n\nGit diff:\n${diff}`;
 
     return { systemPrompt, userPrompt };
+  }
+
+  private sanitizeCommitMessage(message: string): string {
+    let cleaned = message.trim();
+    
+    // 去除 markdown 代码块
+    if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '');
+    }
+    
+    // 去除 diff 前缀 + 或 -
+    cleaned = cleaned.split('\n').map(line => {
+      if (line.startsWith('+ ') || line.startsWith('- ')) {
+        return line.slice(2);
+      }
+      if (line.startsWith('+') || line.startsWith('-')) {
+        return line.slice(1);
+      }
+      return line;
+    }).join('\n');
+    
+    return cleaned.trim();
   }
 
   // Anthropic Claude
