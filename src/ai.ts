@@ -1,12 +1,13 @@
 import axios from 'axios';
-import { 
-  LzcConfig, 
-  PromptData, 
-  AnthropicResponse, 
+import {
+  LzcConfig,
+  PromptData,
+  AnthropicResponse,
   OpenAIResponse,
   DoubaoResponse,
   KimiResponse,
-  OllamaResponse
+  OllamaResponse,
+  OllamaTagsResponse
 } from './types';
 
 export class AIClient {
@@ -24,6 +25,10 @@ export class AIClient {
     if (!apiKey && provider !== 'ollama') {
       const envVar = this.getEnvVarName(provider);
       throw new Error(`未设置 API Key。请设置环境变量 ${envVar} 或在配置文件中添加 apiKey`);
+    }
+
+    if (provider === 'ollama') {
+      await this.validateAndFallbackOllamaModel();
     }
 
     const maxDiffLength = 8000;
@@ -219,6 +224,30 @@ export class AIClient {
     );
 
     return response.data.choices[0].message.content.trim();
+  }
+
+  private async validateAndFallbackOllamaModel(): Promise<void> {
+    const baseUrl = this.config.baseUrl || process.env.OLLAMA_HOST || 'http://localhost:11434';
+    try {
+      const response = await axios.get<OllamaTagsResponse>(`${baseUrl}/api/tags`);
+      const models = response.data.models || [];
+      if (models.length === 0) {
+        throw new Error('Ollama 中未找到可用模型，请先执行 ollama pull <模型名> 拉取模型');
+      }
+      const availableModelNames = models.map(m => m.name);
+      if (!availableModelNames.includes(this.config.model)) {
+        const fallbackModel = availableModelNames[0];
+        console.warn(`⚠️  配置模型 ${this.config.model} 不可用，已自动切换至 ${fallbackModel}`);
+        this.config.model = fallbackModel;
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error(
+          `Ollama 服务未启动或无法连接（地址: ${baseUrl}），请确认 Ollama 是否运行`
+        );
+      }
+      throw error;
+    }
   }
 
   // Ollama (本地部署)
