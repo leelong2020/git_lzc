@@ -10,7 +10,7 @@ export async function main(options: CliOptions = {}): Promise<void> {
   const configManager = new Config();
 
   const repoRoot = await git.getRepoRoot();
-  configManager.load(repoRoot);
+  await configManager.load(repoRoot);
 
   const baseConfig = configManager.get();
   const finalConfig: LzcConfig = {
