@@ -10,7 +10,8 @@
     "build": "tsc",
     "dev": "ts-node src/index.ts",
     "prepare": "npm run build",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "jest"
   },
   "keywords": [
     "git",
@@ -33,7 +34,10 @@
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.11.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
