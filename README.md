@@ -1,5 +1,7 @@
 # lzc
 
+> [English](README_EN.md) | 中文
+
 > Lazy Commit — 用 AI 分析 Git 变更，自动生成规范的 commit message。
 >
 > 支持多种 AI 提供商：Anthropic Claude、OpenAI、豆包 (Doubao)、Kimi (Moonshot)、Ollama 本地部署
@@ -14,23 +16,18 @@ npm install -g lzc
 
 ## 快速开始
 
-1. **创建全局配置文件目录**
+1. **安装工具**
    ```bash
-   mkdir -p ~/.config/git-lzc
+   npm install -g lzc
    ```
 
-2. **复制配置文件示例到全局配置**
+2. **首次运行**，工具会自动检测并询问是否创建全局配置文件
    ```bash
-   cp .lzc.example.json ~/.config/git-lzc/lzc.json
+   git add .
+   git-lzc
    ```
 
 3. **编辑配置文件**，设置你的 AI 提供商和 API Key
-
-4. **开始使用**
-```bash
-git add .
-git-lzc
-```
 
 ## 功能特性
 
@@ -38,8 +35,10 @@ git-lzc
 - 📝 **自动生成规范 commit** — 支持 Conventional Commits 规范
 - 🌍 **多语言支持** — 中英文 commit message
 - ⚙️ **灵活配置** — 支持项目级和全局配置文件
+- 📜 **JSON5 格式配置** — 支持注释，配置更直观
 - 🔒 **本地部署支持** — 通过 Ollama 使用本地模型，无需联网
 - 🎯 **交互式确认** — 可编辑、确认或重新生成 commit message
+- 🔄 **向后兼容** — 自动读取旧版 `.json` 配置文件
 
 ```
 git add .
@@ -71,37 +70,52 @@ feat(auth): add OAuth2 login with Google
 
 配置文件按照以下优先级读取（优先级从高到低）：
 
-1. **项目级配置**: `<repo-root>/.lzc.json` — 当前项目的特定配置
-2. **全局配置**: `~/.config/git-lzc/lzc.json` — 用户的全局默认配置
+1. **项目级配置**: `<repo-root>/.lzc.json5` — 当前项目的特定配置
+2. **全局配置**: `~/.config/git-lzc/lzc.json5` — 用户的全局默认配置
 3. **默认配置**: 内置的默认参数
 
-### 初始化全局配置
+> **兼容旧版**: 项目同时兼容 `.lzc.json`（旧版）和 `.lzc.json5`（新版）文件。若两者同时存在，优先使用 `.lzc.json5`。
+
+### 自动创建全局配置
+
+首次运行 `git-lzc` 时，若未找到全局配置文件，工具会询问是否自动创建：
 
 ```bash
-# 创建配置目录
-mkdir -p ~/.config/git-lzc
-
-# 复制示例配置文件
-cp .lzc.example.json ~/.config/git-lzc/lzc.json
-
-# 编辑配置文件
-vi ~/.config/git-lzc/lzc.json
+git-lzc
+# → 未找到全局配置文件，是否自动创建？
+# → 路径: ~/.config/git-lzc/lzc.json5
 ```
 
-### 配置示例 (`~/.config/git-lzc/lzc.json`)
+确认后，工具会自动生成带注释的默认配置，用户只需编辑即可。
 
-```json
+### 配置示例 (`~/.config/git-lzc/lzc.json5`)
+
+```json5
 {
+  // API 提供商: anthropic, openai, doubao, kimi, ollama
   "apiProvider": "ollama",
+
+  // 模型名称
   "model": "gemma3:latest",
+
+  // 界面语言: zh (中文), en (英文)
   "language": "zh",
+
+  // 是否自动提交 commit: true 或 false
   "autoCommit": false,
+
+  // commit 提交风格: conventional, free
   "commitStyle": "conventional",
+
+  // API 基础 URL (ollama 默认: http://127.0.0.1:11434)
   "baseUrl": "http://127.0.0.1:11434"
+
+  // API 密钥 (使用第三方 API 时需要)
+  // "apiKey": "your-api-key-here"
 }
 ```
 
-> **注意**: 你可以将配置文件放在项目根目录作为 `.lzc.json`，仅对当前项目生效。
+> **注意**: 你可以将配置文件放在项目根目录作为 `.lzc.json5`，仅对当前项目生效。
 
 ### 配置项说明
 
