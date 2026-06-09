@@ -86,32 +86,179 @@ export class AIClient {
   private buildPrompt(diff: string): PromptData {
     const isConventional = this.config.commitStyle === 'conventional';
     const isChinese = this.config.language === 'zh';
+    let systemPrompt: string;
+    let userPrompt: string;
 
-    let systemPrompt = isChinese
-      ? '你是一个专业的 Git 提交信息生成助手。'
-      : 'You are a professional Git commit message generator.';
+    if (isConventional && isChinese) {
+      systemPrompt = `你是专业的 Git 提交信息生成助手。严格遵循 Conventional Commits 规范。
 
-    if (isConventional) {
-      systemPrompt += isChinese
-        ? '请使用 Conventional Commits 规范生成提交信息。格式: <type>(<scope>): <subject>\n\n<body>。类型可选: feat, fix, docs, style, refactor, perf, test, chore。'
-        : 'Use Conventional Commits format: <type>(<scope>): <subject>\n\n<body>. Types: feat, fix, docs, style, refactor, perf, test, chore.';
+格式：<type>(<scope>): <subject>
+
+<body>
+
+规则：
+1. type 必须是以下之一：
+   - feat: 新功能
+   - fix: 修复问题
+   - docs: 文档相关
+   - style: 代码格式调整（不影响功能）
+   - refactor: 代码重构（既不修复 bug 也不添加功能）
+   - perf: 性能优化
+   - test: 测试相关
+   - chore: 构建过程、辅助工具、依赖升级等杂项
+
+2. scope: 变更涉及的模块名，从文件路径推断。常见 scope 如：ai, config, git, cli, deps, docs, types。
+   - 如无明确模块或变更跨多个模块，可省略 scope
+   - scope 应简洁，不超过 15 个字符
+
+3. subject:
+   - 使用中文撰写
+   - 不超过 30 个字
+   - 使用祈使语气（如"添加"而非"添加了"、"修复"而非"修复了"）
+   - 不以句号结尾
+
+4. body:
+   - 仅在变更有必要补充说明时添加（如多文件变更、需要解释变更原因）
+   - 每行不超过 72 个字符
+   - 简单变更（如单文件修改、typo 修复）应省略 body
+   - body 与 subject 之间用一个空行分隔
+
+5. 必须只输出 commit message 纯文本，禁止任何额外说明、解释或示例。
+
+示例：
+
+feat(config): 配置文件升级为 JSON5 格式并支持自动创建
+
+fix(ai): 修复 Ollama 模型回退时重复请求的问题
+
+docs(readme): 更新 README 并增加英文版本`;
+
+      userPrompt = `根据以下 Git diff 生成 commit message。要求：
+1. 只输出 commit message 纯文本，不要有任何额外说明
+2. 严禁输出代码片段、严禁重复 diff 内容
+3. 不要添加 markdown 代码块标记
+4. 总结变更的核心目的，而不是罗列每行改动
+5. 如果变更是简单修改（如单文件、少量改动），省略 body 部分
+6. 严格遵循 Conventional Commits 格式
+
+Git diff：
+${diff}`;
+    } else if (isConventional && !isChinese) {
+      systemPrompt = `You are a professional Git commit message generator. Strictly follow the Conventional Commits specification.
+
+Format: <type>(<scope>): <subject>
+
+<body>
+
+Rules:
+1. type must be one of:
+   - feat: new feature
+   - fix: bug fix
+   - docs: documentation changes
+   - style: code style changes (no functional impact)
+   - refactor: code refactoring (neither fix nor feature)
+   - perf: performance improvement
+   - test: test-related changes
+   - chore: build process, tooling, dependency updates, etc.
+
+2. scope: the module being changed, inferred from file paths. Common scopes: ai, config, git, cli, deps, docs, types.
+   - Omit if unclear or spanning multiple modules
+   - Keep it concise, max 15 chars
+
+3. subject:
+   - Written in English
+   - Max 50 characters
+   - Use imperative mood ("Add" not "Added", "Fix" not "Fixed")
+   - Lowercase first letter
+   - No trailing period
+
+4. body:
+   - Add only when necessary to explain complex changes (multi-file, rationale needed)
+   - Wrap each line at max 72 characters
+   - Omit for simple changes (single file, typo fix)
+   - Separate body from subject with a blank line
+
+5. Output ONLY the commit message plain text. No extra explanations, notes, or examples.
+
+Examples:
+
+feat(config): upgrade config file to JSON5 with auto-creation
+
+fix(ai): fix duplicate request in Ollama model fallback
+
+docs(readme): update README and add English version`;
+
+      userPrompt = `Generate a commit message based on the following Git diff. Requirements:
+1. Output ONLY the commit message plain text, no extra explanations
+2. NEVER output code snippets or repeat diff content
+3. Do not use markdown code blocks
+4. Summarize the core purpose, not every line changed
+5. Omit the body for simple changes (single file, minor edits)
+6. Strictly follow the Conventional Commits format
+
+Git diff:
+${diff}`;
+    } else if (!isConventional && isChinese) {
+      systemPrompt = `你是专业的 Git 提交信息生成助手。
+
+规则：
+1. 简洁描述变更的核心目的
+2. 使用中文撰写，不超过 50 个字
+3. 使用祈使语气（"添加"而非"添加了"）
+4. 必须只输出 commit message 纯文本，禁止任何额外说明`;
+
+      userPrompt = `根据以下 Git diff 生成简洁的 commit message。要求：
+1. 只输出 commit message 纯文本
+2. 严禁输出代码片段、严禁重复 diff 内容
+3. 不要添加 markdown 代码块标记
+4. 总结变更的核心目的
+
+Git diff：
+${diff}`;
+    } else {
+      systemPrompt = `You are a professional Git commit message generator.
+
+Rules:
+1. Concisely describe the core purpose of the changes
+2. Written in English, max 72 characters
+3. Use imperative mood ("Add" not "Added")
+4. Output ONLY the commit message plain text. No extra explanations.`;
+
+      userPrompt = `Generate a concise commit message based on the following Git diff. Requirements:
+1. Output ONLY the commit message plain text
+2. NEVER output code snippets or repeat diff content
+3. Do not use markdown code blocks
+4. Summarize the core purpose of the changes
+
+Git diff:
+${diff}`;
     }
-
-    const userPrompt = isChinese
-      ? `根据以下 Git diff 生成简洁的 commit message。要求：\n1. 只输出 commit message 纯文本，不要有任何额外说明\n2. 严禁输出代码片段、严禁重复 diff 内容\n3. 不要添加 markdown 代码块标记\n4. 总结变更的核心目的，而不是罗列每行改动\n\nGit diff：\n${diff}`
-      : `Generate a concise commit message based on the following Git diff. Requirements:\n1. Output ONLY the commit message plain text, no extra explanations\n2. NEVER output code snippets or repeat diff content\n3. Do not use markdown code blocks\n4. Summarize the core purpose of the changes, not every line\n\nGit diff:\n${diff}`;
 
     return { systemPrompt, userPrompt };
   }
 
   private sanitizeCommitMessage(message: string): string {
     let cleaned = message.trim();
-    
+
     // 去除 markdown 代码块
     if (cleaned.startsWith('```')) {
       cleaned = cleaned.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '');
     }
-    
+    cleaned = cleaned.trim();
+
+    // 去除常见 AI 输出前缀
+    const aiPrefixes = [
+      /^commit\s*message\s*[:：]\s*/i,
+      /^generated\s*commit\s*[:：]\s*/i,
+      /^here['']?s?\s+(the\s+)?commit\s*message\s*[:：]\s*/i,
+      /^(以下是?)?\s*commit\s*message\s*[:：]\s*/i,
+      /^以下(是)?\s*(为)?(您)?生成的\s*commit\s*message\s*[:：]\s*/i,
+    ];
+    for (const prefix of aiPrefixes) {
+      cleaned = cleaned.replace(prefix, '');
+    }
+    cleaned = cleaned.trim();
+
     // 去除 diff 前缀 + 或 -
     cleaned = cleaned.split('\n').map(line => {
       if (line.startsWith('+ ') || line.startsWith('- ')) {
@@ -122,7 +269,39 @@ export class AIClient {
       }
       return line;
     }).join('\n');
-    
+
+    // 去除重复的 conventional commit 前缀
+    // 例如: "feat: feat: xxx" → "feat: xxx"
+    // 例如: "feat: feat(config): xxx" → "feat(config): xxx"
+    cleaned = cleaned.replace(
+      /^(feat|fix|docs|style|refactor|perf|test|chore)(\([^)]*\))?:\s+(feat|fix|docs|style|refactor|perf|test|chore)(\([^)]*\))?:\s+/i,
+      (match, type1, scope1, type2, scope2) => {
+        const scope = scope2 || scope1;
+        return `${type2}${scope || ''}: `;
+      }
+    );
+
+    // 规范化冒号后空格：确保只有一个空格
+    cleaned = cleaned.replace(
+      /^(feat|fix|docs|style|refactor|perf|test|chore)(\([^)]*\))?:\s+/i,
+      (match, type, scope) => `${type}${scope || ''}: `
+    );
+
+    // 压缩连续空行为最多两个
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+
+    // 去除尾部多余内容（AI 常见追问）
+    const tailPatterns = [
+      /\n+would\s+you\s+like\b.*$/is,
+      /\n+需要我.*$/is,
+      /\n+请问.*$/is,
+      /\n+do\s+you\s+want\b.*$/is,
+      /\n+if\s+you\s+need\b.*$/is,
+    ];
+    for (const pattern of tailPatterns) {
+      cleaned = cleaned.replace(pattern, '');
+    }
+
     return cleaned.trim();
   }
 
