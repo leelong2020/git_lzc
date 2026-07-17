@@ -10,6 +10,9 @@ import {
   OllamaTagsResponse
 } from './types';
 
+// body 每行最大字符数，与 prompt 约定一致（commitlint 默认限制 100，取更严的 72）
+const BODY_MAX_LINE_LENGTH = 72;
+
 export class AIClient {
   private config: LzcConfig;
 
@@ -31,15 +34,11 @@ export class AIClient {
       await this.validateAndFallbackOllamaModel();
     }
 
-    const maxDiffLength = 8000;
-    const truncatedDiff = diff.length > maxDiffLength
-      ? diff.slice(0, maxDiffLength) + '\n... (diff 已截断)'
-      : diff;
+    // diff 的截断与噪音过滤已在 DiffProcessor 中完成，此处直接使用
+    const prompt = this.buildPrompt(diff);
 
-    const prompt = this.buildPrompt(truncatedDiff);
-
+    let message: string;
     try {
-      let message: string;
       switch (provider) {
         case 'openai':
           message = await this.callOpenAI(prompt, apiKey!);
@@ -59,13 +58,18 @@ export class AIClient {
         default:
           throw new Error(`不支持的 API 提供商: ${provider}`);
       }
-      return this.sanitizeCommitMessage(message);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(`API 调用失败: ${error.response.status} - ${error.response.data?.error?.message || error.message}`);
       }
       throw new Error(`API 调用失败: ${(error as Error).message}`);
     }
+
+    const cleaned = this.sanitizeCommitMessage(message);
+    if (!cleaned) {
+      throw new Error('模型返回的 commit message 为空或无法解析，请重试或更换模型');
+    }
+    return cleaned;
   }
 
   private getEnvVarName(provider: string): string {
@@ -140,6 +144,7 @@ docs(readme): 更新 README 并增加英文版本`;
 4. 总结变更的核心目的，而不是罗列每行改动
 5. 如果变更是简单修改（如单文件、少量改动），省略 body 部分
 6. 严格遵循 Conventional Commits 格式
+7. body 每行不超过 72 个字符，内容较长时请主动换行
 
 Git diff：
 ${diff}`;
@@ -195,6 +200,7 @@ docs(readme): update README and add English version`;
 4. Summarize the core purpose, not every line changed
 5. Omit the body for simple changes (single file, minor edits)
 6. Strictly follow the Conventional Commits format
+7. Wrap body lines at 72 characters; break long sentences into multiple lines
 
 Git diff:
 ${diff}`;
@@ -302,7 +308,75 @@ ${diff}`;
       cleaned = cleaned.replace(pattern, '');
     }
 
-    return cleaned.trim();
+    // body 超长行强制折行：AI 常生成不换行的长段落，
+    // 超长行会被 commitlint（body-max-line-length）拒绝
+    cleaned = this.wrapBodyLines(cleaned.trim(), BODY_MAX_LINE_LENGTH);
+
+    return cleaned;
+  }
+
+  /**
+   * body 折行：将超长行在标点/空格处断开，列表项续行保持缩进对齐。
+   * 首行（header）不处理；阈值 72 与 prompt 约定一致，同时满足 commitlint 默认 100 的限制。
+   */
+  private wrapBodyLines(message: string, maxLength: number): string {
+    const result: string[] = [];
+    message.split('\n').forEach((line, index) => {
+      if (index === 0 || line.length <= maxLength) {
+        result.push(line);
+      } else {
+        result.push(...this.wrapLine(line, maxLength));
+      }
+    });
+    return result.join('\n');
+  }
+
+  /** 单行折行：列表项提取标记前缀（-、*、1. 等），续行用等宽空格缩进对齐 */
+  private wrapLine(line: string, maxLength: number): string[] {
+    const prefixMatch = line.match(/^(\s*(?:[-*+]|\d+\.)\s+)/);
+    const prefix = prefixMatch?.[1] ?? '';
+    const indent = ' '.repeat(prefix.length);
+
+    const chunks: string[] = [];
+    let remaining = prefix ? line.slice(prefix.length) : line;
+    let first = true;
+
+    while (true) {
+      const available = maxLength - (first ? prefix.length : indent.length);
+      if (remaining.length <= available) {
+        chunks.push((first ? prefix : indent) + remaining);
+        break;
+      }
+      const cut = this.findBreakPoint(remaining, available);
+      chunks.push((first ? prefix : indent) + remaining.slice(0, cut).trimEnd());
+      remaining = remaining.slice(cut).trimStart();
+      first = false;
+    }
+    return chunks;
+  }
+
+  /**
+   * 寻找折行断点：优先在标点或空格之后断开；
+   * 切点落在英文单词中间时先回退到单词边界；
+   * 单词保护导致切点过小时放弃保护硬切（如超长 URL）。
+   */
+  private findBreakPoint(text: string, limit: number): number {
+    let cut = Math.min(limit, text.length);
+    const isWordChar = (ch: string) => /\w/.test(ch);
+    if (cut < text.length && isWordChar(text[cut - 1]) && isWordChar(text[cut])) {
+      while (cut > 0 && isWordChar(text[cut - 1])) cut--;
+    }
+    if (cut < limit * 0.3) {
+      cut = Math.min(limit, text.length);
+    }
+    // 在切点前半段之后找最近的标点/空格，断在其后（中文标点留在行尾）
+    const minAcceptable = Math.floor(cut * 0.5);
+    for (let i = cut; i > minAcceptable; i--) {
+      if (' \t，。；、：,.;:!?！？)）】]'.includes(text[i - 1])) {
+        return i;
+      }
+    }
+    return Math.max(cut, 1);
   }
 
   // Anthropic Claude
@@ -442,9 +516,15 @@ ${diff}`;
           { role: 'user', content: prompt.userPrompt }
         ],
         stream: false,
+        // 默认关闭思考模式：思考型模型会把 num_predict 预算耗在 thinking 上，导致 content 为空
+        think: this.config.think ?? false,
         options: {
           temperature: 0.3,
-          num_predict: 500
+          num_predict: 500,
+          // 配置 numCtx 时扩大上下文窗口，避免长输入被 Ollama 默认 4096 静默截断
+          ...(this.config.numCtx && this.config.numCtx > 0
+            ? { num_ctx: this.config.numCtx }
+            : {})
         }
       },
       {

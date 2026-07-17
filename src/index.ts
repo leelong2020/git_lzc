@@ -3,6 +3,7 @@ import inquirer from 'inquirer';
 import { GitHelper } from './git';
 import { Config } from './config';
 import { AIClient } from './ai';
+import { DiffProcessor } from './diff';
 import { CliOptions, LzcConfig } from './types';
 
 export async function main(options: CliOptions = {}): Promise<void> {
@@ -27,20 +28,27 @@ export async function main(options: CliOptions = {}): Promise<void> {
 
   const diff = await git.getStagedDiff();
   const diffLines = diff.split('\n').length;
-  console.log(chalk.gray(`发现约 ${diffLines} 行变更\n`));
+  console.log(chalk.gray(`发现约 ${diffLines} 行变更（${diff.length} 字符）\n`));
 
-  let diffInput = diff;
-  if (diffLines > 300) {
-    const stat = await git.getStagedDiffStat();
-    const truncatedLines = diff.split('\n').slice(0, 200).join('\n');
-    diffInput = `变更统计：\n${stat}\n\n主要变更内容（已截断）：\n${truncatedLines}\n...（后续 ${diffLines - 200} 行已省略）`;
-    console.log(chalk.yellow(`diff 行数过多，已截断为前 200 行并附加变更统计\n`));
+  // diff 预处理：过滤噪音文件，超出字符预算时按文件粒度截断
+  const stat = await git.getStagedDiffStat();
+  const processor = new DiffProcessor(finalConfig);
+  const processed = processor.process(diff, stat);
+
+  if (processed.excludedFiles.length > 0) {
+    console.log(chalk.yellow(`📦 已排除 ${processed.excludedFiles.length} 个噪音文件（锁文件/构建产物等），仅在统计中保留`));
+  }
+  if (processed.truncated) {
+    console.log(chalk.yellow(`✂️  diff 超出预算，已按文件粒度截断：${processed.keptFiles}/${processed.totalFiles} 个文件保留完整内容，输入约 ${processed.text.length} 字符`));
+  }
+  if (processed.excludedFiles.length > 0 || processed.truncated) {
+    console.log();
   }
 
   console.log(chalk.blue('🤖 正在生成 commit message...\n'));
 
   const ai = new AIClient(finalConfig);
-  const commitMessage = await ai.generateCommitMessage(diffInput);
+  const commitMessage = await ai.generateCommitMessage(processed.text);
 
   console.log(chalk.green('生成的 commit message:'));
   console.log(chalk.white('─'.repeat(50)));
@@ -52,6 +60,18 @@ export async function main(options: CliOptions = {}): Promise<void> {
     console.log(chalk.yellow('📋 Dry-run 模式，未执行 commit'));
     return;
   }
+
+  // 提交失败（如 commitlint 校验不通过）时保留 message，便于修正后手动提交
+  const tryCommit = async (message: string): Promise<void> => {
+    try {
+      await git.commit(message);
+    } catch (error) {
+      console.log(chalk.yellow('\n⚠️  提交失败。commit message 如下，可修正后手动执行 git commit：\n'));
+      console.log(message);
+      console.log();
+      throw error;
+    }
+  };
 
   let shouldCommit = finalConfig.autoCommit;
 
@@ -89,7 +109,7 @@ export async function main(options: CliOptions = {}): Promise<void> {
         return;
       }
 
-      await git.commit(editedMessage.trim());
+      await tryCommit(editedMessage.trim());
       return;
     }
 
@@ -97,6 +117,6 @@ export async function main(options: CliOptions = {}): Promise<void> {
   }
 
   if (shouldCommit) {
-    await git.commit(commitMessage);
+    await tryCommit(commitMessage);
   }
 }

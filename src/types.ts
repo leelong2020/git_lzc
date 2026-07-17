@@ -8,6 +8,16 @@ export interface LzcConfig {
   apiProvider: ApiProvider;
   apiKey?: string;
   baseUrl?: string;
+  // diff 内容总字符预算，超出后按文件粒度截断；0 表示不限制
+  // 未配置时默认：ollama 6000，其他 provider 12000
+  maxDiffChars?: number;
+  // diff 噪音文件排除模式（锁文件、构建产物等），支持 * 与 ** glob
+  diffExcludePatterns?: string[];
+  // Ollama 上下文窗口大小（options.num_ctx），不配置则使用 Ollama 默认值
+  numCtx?: number;
+  // Ollama 思考模式（think），默认 false
+  // 思考型模型（qwen3、gemma4 等）开启后可能把输出预算耗在 thinking 上导致无结果
+  think?: boolean;
 }
 
 export interface CliOptions {

@@ -128,6 +128,10 @@ After confirmation, the tool will generate a default configuration with comments
 | `commitStyle` | string | `"conventional"` | Commit style: `conventional`, `simple`, `detailed` |
 | `baseUrl` | string | `null` | API base URL (Ollama default: `http://127.0.0.1:11434`) |
 | `apiKey` | string | `null` | API key (can also be set via environment variables) |
+| `maxDiffChars` | number | ollama `6000` / others `12000` | Character budget for diff content; truncated per-file when exceeded, `0` means unlimited. Recommended `4000`-`8000` for small local models |
+| `diffExcludePatterns` | string[] | lock files, `dist/`, etc. | Noise file exclusion patterns (content is not sent to AI, kept only in statistics); supports `*` and `**` globs |
+| `numCtx` | number | Ollama default | Ollama context window size (`num_ctx`), recommended `8192` for small local models |
+| `think` | boolean | `false` | Ollama thinking mode; thinking models (qwen3, gemma4, etc.) may exhaust the output budget and return empty results when enabled |
 
 ### Environment Variables
 

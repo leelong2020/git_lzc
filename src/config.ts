@@ -43,6 +43,21 @@ export class Config {
   // commit 提交风格: conventional, free
   "commitStyle": "${DEFAULT_CONFIG.commitStyle}",
 
+  // diff 预处理配置（可选）
+  // diff 内容总字符预算，超出后按文件粒度截断，0 表示不限制
+  // 默认：ollama 6000，其他 provider 12000（本地小模型建议 4000-8000）
+  // "maxDiffChars": 6000,
+
+  // diff 噪音文件排除模式（锁文件/构建产物等），支持 * 与 ** glob
+  // "diffExcludePatterns": ["package-lock.json", "pnpm-lock.yaml", "dist/**"],
+
+  // Ollama 上下文窗口大小（num_ctx），本地小模型建议 8192
+  // "numCtx": 8192,
+
+  // Ollama 思考模式（think），默认 false
+  // 思考型模型（qwen3、gemma4 等）开启后可能耗尽输出预算导致无结果
+  // "think": false,
+
   // API 基础 URL (可选)
   // "baseUrl": "",
 

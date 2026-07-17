@@ -237,4 +237,75 @@ describe('AIClient - 输出质量评价', () => {
       expect(result).toBe('feat(config): test');
     });
   });
+
+  describe('sanitizeCommitMessage body 折行', () => {
+    const client = createClient();
+
+    it('超过 72 字符的 body 行被折行', () => {
+      const longLine = '这是一行非常非常长的中文描述，'.repeat(10); // 150 字符
+      const result = (client as any).sanitizeCommitMessage(`feat: test\n\n${longLine}`);
+      const bodyLines = result.split('\n').slice(1);
+      expect(bodyLines.length).toBeGreaterThan(1);
+      for (const line of bodyLines) {
+        expect(line.length).toBeLessThanOrEqual(72);
+      }
+    });
+
+    it('header（首行）不折行', () => {
+      const longHeader = 'feat: ' + 'a'.repeat(100);
+      const result = (client as any).sanitizeCommitMessage(longHeader);
+      expect(result.split('\n')[0]).toBe(longHeader);
+    });
+
+    it('优先在标点处断行，标点留在行尾', () => {
+      const line = '前'.repeat(60) + '，' + '后'.repeat(30);
+      const result = (client as any).sanitizeCommitMessage(`feat: test\n\n${line}`);
+      const bodyLines = result.split('\n').slice(1).filter((l: string) => l.trim());
+      expect(bodyLines[0]).toBe('前'.repeat(60) + '，');
+      expect(bodyLines[0].length).toBeLessThanOrEqual(72);
+    });
+
+    it('列表项折行后续行缩进对齐', () => {
+      // 注意：sanitize 会剥离行首 "- "（防模型回显 diff），故用数字列表验证缩进对齐
+      const item = `1. ${'条目内容，'.repeat(20)}`; // 超长的有序列表项
+      const result = (client as any).sanitizeCommitMessage(`feat: test\n\n${item}`);
+      const lines = result.split('\n');
+      expect(lines[2].startsWith('1. ')).toBe(true);
+      expect(lines.length).toBeGreaterThan(3);
+      // 续行以与 "1. " 等宽的 3 空格缩进，不重复列表标记
+      expect(lines[3].startsWith('   ')).toBe(true);
+      expect(lines[3].startsWith('   1.')).toBe(false);
+      for (const line of lines.slice(2)) {
+        expect(line.length).toBeLessThanOrEqual(72);
+      }
+    });
+
+    it('英文单词不被从中间切断', () => {
+      const words = Array.from({ length: 30 }, (_, i) => `wordnumber${i}`).join(' ');
+      const result = (client as any).sanitizeCommitMessage(`feat: test\n\n${words}`);
+      const bodyLines = result.split('\n').slice(1);
+      for (const line of bodyLines) {
+        expect(line.length).toBeLessThanOrEqual(72);
+      }
+      // 所有单词完整保留
+      for (let i = 0; i < 30; i++) {
+        expect(result).toContain(`wordnumber${i}`);
+      }
+    });
+
+    it('无空格的超长串硬切，不丢字符', () => {
+      const url = `https://example.com/${'a'.repeat(100)}`;
+      const result = (client as any).sanitizeCommitMessage(`feat: test\n\n${url}`);
+      const bodyLines = result.split('\n').slice(1);
+      for (const line of bodyLines) {
+        expect(line.length).toBeLessThanOrEqual(72);
+      }
+      expect(bodyLines.join('')).toBe(url);
+    });
+
+    it('短行不受影响', () => {
+      const msg = 'feat: test\n\n短 body 行';
+      expect((client as any).sanitizeCommitMessage(msg)).toBe(msg);
+    });
+  });
 });

@@ -128,6 +128,10 @@ git-lzc
 | `commitStyle` | string | `"conventional"` | Commit 风格: `conventional`, `simple`, `detailed` |
 | `baseUrl` | string | `null` | API 基础 URL (Ollama 默认: `http://127.0.0.1:11434`) |
 | `apiKey` | string | `null` | API 密钥 (可通过环境变量设置) |
+| `maxDiffChars` | number | ollama `6000` / 其他 `12000` | diff 内容字符预算，超出后按文件粒度截断，`0` 表示不限制。本地小模型建议 `4000`-`8000` |
+| `diffExcludePatterns` | string[] | 锁文件、`dist/` 等 | diff 噪音文件排除模式（内容不发送给 AI，仅在统计中保留），支持 `*` 与 `**` glob |
+| `numCtx` | number | Ollama 默认值 | Ollama 上下文窗口大小（`num_ctx`），本地小模型建议 `8192` |
+| `think` | boolean | `false` | Ollama 思考模式；思考型模型（qwen3、gemma4 等）开启后可能耗尽输出预算导致无结果 |
 
 ### 环境变量
 
