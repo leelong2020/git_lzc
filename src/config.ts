@@ -110,7 +110,7 @@ export class Config {
       } else {
         console.log(`ℹ️  未找到全局配置文件: ${GLOBAL_CONFIG_PATH}`);
         console.log(`   请将配置文件放置在: ${GLOBAL_CONFIG_PATH}`);
-        console.log(`   示例配置文件可参考项目中的 .lzc.example.json`);
+        console.log(`   示例配置文件可参考项目中的 .lzc.example.json5`);
         console.log();
       }
     }

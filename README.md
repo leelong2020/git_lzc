@@ -11,14 +11,14 @@
 ## 安装
 
 ```bash
-npm install -g lzc
+npm install -g lazy-git-commit
 ```
 
 ## 快速开始
 
 1. **安装工具**
    ```bash
-   npm install -g lzc
+   npm install -g lazy-git-commit
    ```
 
 2. **首次运行**，工具会自动检测并询问是否创建全局配置文件
@@ -115,7 +115,7 @@ git-lzc
 }
 ```
 
-> **注意**: 你可以将配置文件放在项目根目录作为 `.lzc.json5`，仅对当前项目生效。
+> **注意**: 你可以将配置文件放在项目根目录作为 `.lzc.json5`，仅对当前项目生效。完整配置示例可参考项目根目录的 `.lzc.example.json5`。
 
 ### 配置项说明
 
@@ -182,9 +182,9 @@ git-lzc
 ## 开发
 
 ```bash
-npm install
-npm run build     # 编译 TypeScript
-npm link          # 本地链接测试
+pnpm install
+pnpm run build   # 编译 TypeScript
+npm link         # 本地链接测试
 ```
 
 ---

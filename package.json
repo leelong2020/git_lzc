@@ -1,15 +1,25 @@
 {
-  "name": "lzc",
+  "name": "lazy-git-commit",
   "version": "1.0.0",
   "description": "Lazy Commit — 用 AI 分析 Git 变更，自动生成规范的 commit message",
   "main": "dist/index.js",
   "bin": {
     "git-lzc": "./bin/lzc.js"
   },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "README_EN.md",
+    ".lzc.example.json5"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "ts-node src/index.ts",
-    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run clean && npm run build",
     "clean": "rm -rf dist",
     "test": "jest"
   },
@@ -21,8 +31,12 @@
     "lazy",
     "conventional-commits"
   ],
-  "author": "",
+  "author": "loonglee <leelong2020@outlook.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:leelong2020/git_lzc.git"
+  },
   "dependencies": {
     "@types/json5": "^0.0.30",
     "axios": "^1.6.7",

@@ -11,14 +11,14 @@
 ## Installation
 
 ```bash
-npm install -g lzc
+npm install -g lazy-git-commit
 ```
 
 ## Quick Start
 
 1. **Install the tool**
    ```bash
-   npm install -g lzc
+   npm install -g lazy-git-commit
    ```
 
 2. **Run for the first time**, the tool will automatically detect and ask whether to create a global configuration file
@@ -115,7 +115,7 @@ After confirmation, the tool will generate a default configuration with comments
 }
 ```
 
-> **Note**: You can place a configuration file in the project root as `.lzc.json5` to apply only to the current project.
+> **Note**: You can place a configuration file in the project root as `.lzc.json5` to apply only to the current project. See `.lzc.example.json5` in the project root for a complete configuration example.
 
 ### Configuration Options
 
@@ -182,9 +182,9 @@ git-lzc
 ## Development
 
 ```bash
-npm install
-npm run build     # Compile TypeScript
-npm link          # Local link testing
+pnpm install
+pnpm run build   # Compile TypeScript
+npm link         # Local link testing
 ```
 
 ---
