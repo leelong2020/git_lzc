@@ -186,9 +186,39 @@ git-lzc
 
 ```bash
 pnpm install
-pnpm run build   # Compile TypeScript
-npm link         # Local link testing
+pnpm run build          # Compile TypeScript
+pnpm link --global      # Link locally, install the git-lzc command globally (for development)
 ```
+
+### Packaging & Publishing
+
+`pnpm run build` only compiles TypeScript into `dist/`; to distribute the CLI you need to pack it into an npm tarball.
+
+```bash
+# 1. Compile (required: pnpm pack does NOT run build automatically)
+pnpm run build
+
+# 2. Preview the tarball contents (dry run, no file written)
+pnpm pack --dry-run
+
+# 3. Create the tarball: git-lazy-commit-1.0.0.tgz
+pnpm pack
+
+# 4. Verify locally: install the tarball globally and run it
+#    Note: pnpm global install needs an absolute path; a relative path is resolved
+#    against the global install dir and fails with ENOENT
+pnpm add -g "$(pwd)/git-lazy-commit-1.0.0.tgz"
+#    or use npm (relative paths resolve against the current directory):
+#    npm install -g ./git-lazy-commit-1.0.0.tgz
+git-lzc --help
+
+# 5. Publish to npm (runs prepublishOnly: test + clean + build)
+pnpm publish --access public
+```
+
+> The `files` whitelist already includes `dist/`, `bin/` and the docs, so `dist/` is packaged correctly even though it is listed in `.gitignore`.
+> Note: `pnpm pack` only triggers `prepack`/`prepare` and does **not** run `prepublishOnly`, so run `pnpm run build` manually before packing; `pnpm publish` rebuilds automatically.
+> To install the tarball use `pnpm add -g <absolute-path>` (`pnpm install` does not support `-g`). pnpm global install resolves the path **relative to the global install dir** (e.g. `~/.local/share/pnpm/global/5`), so `./x.tgz` fails with `ENOENT`; pass an absolute path such as `pnpm add -g "$(pwd)/git-lazy-commit-1.0.0.tgz"`. `npm install -g ./x.tgz` resolves relative to the current directory instead.
 
 ---
 

@@ -186,9 +186,38 @@ git-lzc
 
 ```bash
 pnpm install
-pnpm run build   # 编译 TypeScript
-npm link         # 本地链接测试
+pnpm run build          # 编译 TypeScript
+pnpm link --global      # 本地链接，把 git-lzc 命令装到全局（开发调试用）
 ```
+
+### 打包与发布
+
+`pnpm run build` 仅将 TypeScript 编译到 `dist/`；要分发给用户，需打成 npm tarball。
+
+```bash
+# 1. 编译（必须：pnpm pack 不会自动执行 build）
+pnpm run build
+
+# 2. 预览打包内容（只列清单，不生成文件）
+pnpm pack --dry-run
+
+# 3. 生成 tarball：git-lazy-commit-1.0.0.tgz
+pnpm pack
+
+# 4. 本地验证：全局安装 tarball 后运行
+#    注意：pnpm 全局安装需用绝对路径，相对路径会被解析到全局安装目录而报 ENOENT
+pnpm add -g "$(pwd)/git-lazy-commit-1.0.0.tgz"
+#    或用 npm（相对路径按当前目录解析）：
+#    npm install -g ./git-lazy-commit-1.0.0.tgz
+git-lzc --help
+
+# 5. 发布到 npm（自动执行 prepublishOnly：test + clean + build）
+pnpm publish --access public
+```
+
+> `files` 白名单已包含 `dist/`、`bin/` 与文档，因此即使 `dist/` 被 `.gitignore` 忽略，也会正常打进包。
+> 注意：`pnpm pack` 只触发 `prepack`/`prepare`，**不会**执行 `prepublishOnly`，所以手动 `pack` 前必须先 `pnpm run build`；`pnpm publish` 则会自动重新编译。
+> 安装 tarball 请用 `pnpm add -g <绝对路径>`（`pnpm install` 不支持 `-g`）。pnpm 的全局安装会**相对全局安装目录**（如 `~/.local/share/pnpm/global/5`）解析路径，因此 `./x.tgz` 会报 `ENOENT`，请传绝对路径，如 `pnpm add -g "$(pwd)/git-lazy-commit-1.0.0.tgz"`；`npm install -g ./x.tgz` 则按当前目录解析。
 
 ---
 
