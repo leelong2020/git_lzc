@@ -38,6 +38,7 @@ npm install -g lazy-git-commit
 - 📜 **JSON5 Format Configuration** — Supports comments for more intuitive configuration
 - 🔒 **Local Deployment Support** — Use local models via Ollama, no internet required
 - 🎯 **Interactive Confirmation** — Edit, confirm, or regenerate commit messages
+- 🛡️ **Commit-lint Self-healing** — When a commit is rejected by commitlint, analyze the error, fix the message, and retry automatically
 - 🔄 **Backward Compatible** — Automatically reads legacy `.json` configuration files
 
 ```
@@ -50,6 +51,8 @@ git diff --staged → AI Analysis → Generate commit message
 User confirmation / editing (optional)
  ↓
 git commit -m "..."
+ ↓  commit failed (e.g. commitlint validation)
+Analyze error → auto-fix message → retry commit
 ```
 
 ## Output Example

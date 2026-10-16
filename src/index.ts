@@ -1,10 +1,14 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { GitHelper } from './git';
+import { GitHelper, CommitError } from './git';
 import { Config } from './config';
 import { AIClient } from './ai';
 import { DiffProcessor } from './diff';
+import { CommitMessageLinter } from './lint';
 import { CliOptions, LzcConfig } from './types';
+
+/** 提交被 commitlint 拒绝后的最大尝试次数（含首次提交） */
+const MAX_COMMIT_ATTEMPTS = 3;
 
 export async function main(options: CliOptions = {}): Promise<void> {
   const git = new GitHelper();
@@ -48,7 +52,15 @@ export async function main(options: CliOptions = {}): Promise<void> {
   console.log(chalk.blue('🤖 正在生成 commit message...\n'));
 
   const ai = new AIClient(finalConfig);
-  const commitMessage = await ai.generateCommitMessage(processed.text);
+  const linter = new CommitMessageLinter();
+
+  // 提交前规范化：修正 scope 大小写等确定性问题，从源头降低被 commitlint 拒绝的概率
+  const normalized = linter.normalize(await ai.generateCommitMessage(processed.text));
+  const commitMessage = normalized.message;
+  if (normalized.changes.length > 0) {
+    console.log(chalk.cyan(`🔧 已自动规范化 commit message：${normalized.changes.join('、')}`));
+    console.log();
+  }
 
   console.log(chalk.green('生成的 commit message:'));
   console.log(chalk.white('─'.repeat(50)));
@@ -61,15 +73,70 @@ export async function main(options: CliOptions = {}): Promise<void> {
     return;
   }
 
-  // 提交失败（如 commitlint 校验不通过）时保留 message，便于修正后手动提交
-  const tryCommit = async (message: string): Promise<void> => {
-    try {
-      await git.commit(message);
-    } catch (error) {
-      console.log(chalk.yellow('\n⚠️  提交失败。commit message 如下，可修正后手动执行 git commit：\n'));
-      console.log(message);
-      console.log();
-      throw error;
+  const showManualInstructions = (message: string): void => {
+    console.log(chalk.yellow('\n⚠️  提交失败。commit message 如下，可修正后手动执行 git commit：\n'));
+    console.log(message);
+    console.log();
+  };
+
+  /**
+   * 提交 message，并在被 commitlint 拒绝时自动分析错误、修正 message 后重试。
+   *
+   * 流程：提交 → 校验是否成功 → 失败则解析 commitlint 错误 →
+   * 应用可自动修复的规则 → 重试；无法自动修复或超过次数时给出人工处理指引。
+   */
+  const commitWithRetry = async (input: string): Promise<void> => {
+    let current = linter.normalize(input).message;
+
+    for (let attempt = 1; attempt <= MAX_COMMIT_ATTEMPTS; attempt++) {
+      try {
+        await git.commit(current);
+        if (attempt > 1) {
+          console.log(chalk.green(`✅ 第 ${attempt} 次尝试提交成功`));
+        }
+        return;
+      } catch (error) {
+        const output = error instanceof CommitError ? error.output : String(error);
+        const problems = linter.analyzeError(output);
+
+        // 非规范类失败（如钩子脚本自身报错）：不重试，直接给出人工处理指引
+        if (problems.length === 0) {
+          showManualInstructions(current);
+          throw error;
+        }
+
+        console.log(chalk.red(`\n❌ 第 ${attempt} 次提交被 commitlint 拒绝：`));
+        for (const problem of problems) {
+          console.log(chalk.yellow(`   • ${problem.message} [${problem.rule}]`));
+        }
+
+        const { message: fixed, changes, remaining } = linter.applyFixes(current, problems);
+        const hasProgress = fixed !== current;
+        if (hasProgress) {
+          console.log(chalk.cyan(`🔧 已自动修正：${changes.join('、')}`));
+        }
+
+        const canRetry = hasProgress && remaining.length === 0 && attempt < MAX_COMMIT_ATTEMPTS;
+        if (!canRetry) {
+          if (remaining.length > 0) {
+            console.log(chalk.yellow('\n⚠️  以下问题无法自动修复，需手动调整：'));
+            for (const problem of remaining) {
+              console.log(chalk.yellow(`   • ${problem.message} [${problem.rule}]`));
+            }
+          }
+          showManualInstructions(hasProgress ? fixed : current);
+          throw new Error(
+            !hasProgress
+              ? '提交失败: 无法自动修正 commit message，请手动调整后提交'
+              : remaining.length > 0
+                ? '提交失败: commit message 不符合规范且无法自动修复'
+                : '提交失败: 已达到最大重试次数'
+          );
+        }
+
+        console.log(chalk.gray(`♻️  已修正 message，重试提交（第 ${attempt + 1} 次）...`));
+        current = fixed;
+      }
     }
   };
 
@@ -109,7 +176,7 @@ export async function main(options: CliOptions = {}): Promise<void> {
         return;
       }
 
-      await tryCommit(editedMessage.trim());
+      await commitWithRetry(editedMessage.trim());
       return;
     }
 
@@ -117,6 +184,6 @@ export async function main(options: CliOptions = {}): Promise<void> {
   }
 
   if (shouldCommit) {
-    await tryCommit(commitMessage);
+    await commitWithRetry(commitMessage);
   }
 }

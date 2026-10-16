@@ -38,6 +38,7 @@ npm install -g lazy-git-commit
 - 📜 **JSON5 格式配置** — 支持注释，配置更直观
 - 🔒 **本地部署支持** — 通过 Ollama 使用本地模型，无需联网
 - 🎯 **交互式确认** — 可编辑、确认或重新生成 commit message
+- 🛡️ **提交规范自愈** — 提交被 commitlint 拒绝时自动分析错误、修正 message 并重试
 - 🔄 **向后兼容** — 自动读取旧版 `.json` 配置文件
 
 ```
@@ -50,6 +51,8 @@ git diff --staged → AI 分析变更 → 生成 commit message
 用户确认 / 编辑（可选）
  ↓
 git commit -m "..."
+ ↓  提交失败（如 commitlint 校验不通过）
+分析错误 → 自动修正 message → 重试提交
 ```
 
 ## 输出示例

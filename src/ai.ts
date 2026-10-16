@@ -9,9 +9,7 @@ import {
   OllamaResponse,
   OllamaTagsResponse
 } from './types';
-
-// body 每行最大字符数，与 prompt 约定一致（commitlint 默认限制 100，取更严的 72）
-const BODY_MAX_LINE_LENGTH = 72;
+import { BODY_MAX_LINE_LENGTH, wrapBodyLines } from './text';
 
 export class AIClient {
   private config: LzcConfig;
@@ -112,6 +110,8 @@ export class AIClient {
    - chore: 构建过程、辅助工具、依赖升级等杂项
 
 2. scope: 变更涉及的模块名，从文件路径推断。常见 scope 如：ai, config, git, cli, deps, docs, types。
+   - 必须全小写（commitlint scope-case 要求 lower-case）
+   - 只取简短模块名，不要包含路径分隔符 / 或文件扩展名，例如用 devmgr 而不是 devMgr/admin.py
    - 如无明确模块或变更跨多个模块，可省略 scope
    - scope 应简洁，不超过 15 个字符
 
@@ -167,6 +167,8 @@ Rules:
    - chore: build process, tooling, dependency updates, etc.
 
 2. scope: the module being changed, inferred from file paths. Common scopes: ai, config, git, cli, deps, docs, types.
+   - Must be lower-case (commitlint scope-case requires lower-case)
+   - Use a short module name only; never include path separators or file extensions, e.g. use devmgr instead of devMgr/admin.py
    - Omit if unclear or spanning multiple modules
    - Keep it concise, max 15 chars
 
@@ -310,73 +312,9 @@ ${diff}`;
 
     // body 超长行强制折行：AI 常生成不换行的长段落，
     // 超长行会被 commitlint（body-max-line-length）拒绝
-    cleaned = this.wrapBodyLines(cleaned.trim(), BODY_MAX_LINE_LENGTH);
+    cleaned = wrapBodyLines(cleaned.trim(), BODY_MAX_LINE_LENGTH);
 
     return cleaned;
-  }
-
-  /**
-   * body 折行：将超长行在标点/空格处断开，列表项续行保持缩进对齐。
-   * 首行（header）不处理；阈值 72 与 prompt 约定一致，同时满足 commitlint 默认 100 的限制。
-   */
-  private wrapBodyLines(message: string, maxLength: number): string {
-    const result: string[] = [];
-    message.split('\n').forEach((line, index) => {
-      if (index === 0 || line.length <= maxLength) {
-        result.push(line);
-      } else {
-        result.push(...this.wrapLine(line, maxLength));
-      }
-    });
-    return result.join('\n');
-  }
-
-  /** 单行折行：列表项提取标记前缀（-、*、1. 等），续行用等宽空格缩进对齐 */
-  private wrapLine(line: string, maxLength: number): string[] {
-    const prefixMatch = line.match(/^(\s*(?:[-*+]|\d+\.)\s+)/);
-    const prefix = prefixMatch?.[1] ?? '';
-    const indent = ' '.repeat(prefix.length);
-
-    const chunks: string[] = [];
-    let remaining = prefix ? line.slice(prefix.length) : line;
-    let first = true;
-
-    while (true) {
-      const available = maxLength - (first ? prefix.length : indent.length);
-      if (remaining.length <= available) {
-        chunks.push((first ? prefix : indent) + remaining);
-        break;
-      }
-      const cut = this.findBreakPoint(remaining, available);
-      chunks.push((first ? prefix : indent) + remaining.slice(0, cut).trimEnd());
-      remaining = remaining.slice(cut).trimStart();
-      first = false;
-    }
-    return chunks;
-  }
-
-  /**
-   * 寻找折行断点：优先在标点或空格之后断开；
-   * 切点落在英文单词中间时先回退到单词边界；
-   * 单词保护导致切点过小时放弃保护硬切（如超长 URL）。
-   */
-  private findBreakPoint(text: string, limit: number): number {
-    let cut = Math.min(limit, text.length);
-    const isWordChar = (ch: string) => /\w/.test(ch);
-    if (cut < text.length && isWordChar(text[cut - 1]) && isWordChar(text[cut])) {
-      while (cut > 0 && isWordChar(text[cut - 1])) cut--;
-    }
-    if (cut < limit * 0.3) {
-      cut = Math.min(limit, text.length);
-    }
-    // 在切点前半段之后找最近的标点/空格，断在其后（中文标点留在行尾）
-    const minAcceptable = Math.floor(cut * 0.5);
-    for (let i = cut; i > minAcceptable; i--) {
-      if (' \t，。；、：,.;:!?！？)）】]'.includes(text[i - 1])) {
-        return i;
-      }
-    }
-    return Math.max(cut, 1);
   }
 
   // Anthropic Claude
