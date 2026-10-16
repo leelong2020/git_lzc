@@ -2,7 +2,7 @@
 
 > [English](README_EN.md) | 中文
 
-> Lazy Commit — 用 AI 分析 Git 变更，自动生成规范的 commit message。
+> Git Lazy Commit — 用 AI 分析 Git 变更，自动生成规范的 commit message。
 >
 > 支持多种 AI 提供商：Anthropic Claude、OpenAI、豆包 (Doubao)、Kimi (Moonshot)、Ollama 本地部署
 
@@ -11,14 +11,14 @@
 ## 安装
 
 ```bash
-npm install -g lazy-git-commit
+npm install -g git-lazy-commit
 ```
 
 ## 快速开始
 
 1. **安装工具**
    ```bash
-   npm install -g lazy-git-commit
+   npm install -g git-lazy-commit
    ```
 
 2. **首次运行**，工具会自动检测并询问是否创建全局配置文件

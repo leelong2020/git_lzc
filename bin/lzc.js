@@ -6,7 +6,7 @@ const chalk = require('chalk');
 
 program
   .name('lzc')
-  .description('Lazy Commit — 用 AI 分析 Git 变更，自动生成规范的 commit message')
+  .description('Git Lazy Commit — 用 AI 分析 Git 变更，自动生成规范的 commit message')
   .version('1.0.0')
   .option('-y, --yes', '跳过确认，直接提交')
   .option('-l, --lang <lang>', '指定语言 (en/zh)')

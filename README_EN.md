@@ -2,7 +2,7 @@
 
 > English | [中文](README.md)
 
-> Lazy Commit — Analyze Git changes with AI and automatically generate standardized commit messages.
+> Git Lazy Commit — Analyze Git changes with AI and automatically generate standardized commit messages.
 >
 > Supports multiple AI providers: Anthropic Claude, OpenAI, Doubao, Kimi (Moonshot), Ollama (local deployment)
 
@@ -11,14 +11,14 @@
 ## Installation
 
 ```bash
-npm install -g lazy-git-commit
+npm install -g git-lazy-commit
 ```
 
 ## Quick Start
 
 1. **Install the tool**
    ```bash
-   npm install -g lazy-git-commit
+   npm install -g git-lazy-commit
    ```
 
 2. **Run for the first time**, the tool will automatically detect and ask whether to create a global configuration file
