@@ -201,15 +201,15 @@ pnpm run build
 # 2. Preview the tarball contents (dry run, no file written)
 pnpm pack --dry-run
 
-# 3. Create the tarball: git-lazy-commit-1.0.0.tgz
+# 3. Create the tarball: git-lazy-commit-1.0.1.tgz
 pnpm pack
 
 # 4. Verify locally: install the tarball globally and run it
 #    Note: pnpm global install needs an absolute path; a relative path is resolved
 #    against the global install dir and fails with ENOENT
-pnpm add -g "$(pwd)/git-lazy-commit-1.0.0.tgz"
+pnpm add -g "$(pwd)/git-lazy-commit-1.0.1.tgz"
 #    or use npm (relative paths resolve against the current directory):
-#    npm install -g ./git-lazy-commit-1.0.0.tgz
+#    npm install -g ./git-lazy-commit-1.0.1.tgz
 git-lzc --help
 
 # 5. Publish to npm (runs prepublishOnly: test + clean + build)
@@ -218,7 +218,51 @@ pnpm publish --access public
 
 > The `files` whitelist already includes `dist/`, `bin/` and the docs, so `dist/` is packaged correctly even though it is listed in `.gitignore`.
 > Note: `pnpm pack` only triggers `prepack`/`prepare` and does **not** run `prepublishOnly`, so run `pnpm run build` manually before packing; `pnpm publish` rebuilds automatically.
-> To install the tarball use `pnpm add -g <absolute-path>` (`pnpm install` does not support `-g`). pnpm global install resolves the path **relative to the global install dir** (e.g. `~/.local/share/pnpm/global/5`), so `./x.tgz` fails with `ENOENT`; pass an absolute path such as `pnpm add -g "$(pwd)/git-lazy-commit-1.0.0.tgz"`. `npm install -g ./x.tgz` resolves relative to the current directory instead.
+> To install the tarball use `pnpm add -g <absolute-path>` (`pnpm install` does not support `-g`). pnpm global install resolves the path **relative to the global install dir** (e.g. `~/.local/share/pnpm/global/5`), so `./x.tgz` fails with `ENOENT`; pass an absolute path such as `pnpm add -g "$(pwd)/git-lazy-commit-1.0.1.tgz"`. `npm install -g ./x.tgz` resolves relative to the current directory instead.
+
+### Offline Package & Client Installer
+
+For air-gapped clients: the script bundles the compiled program together with all production dependencies, so the client machine needs **no network and no `npm install`**.
+
+```bash
+# build + tests + temporary install check + archive
+pnpm run package:offline
+
+# or call the script directly and skip steps as needed
+bash scripts/build-offline-package.sh --skip-tests
+```
+
+Artifacts are written to `release/`:
+
+- `git-lzc-<version>-offline.tar.gz` (Linux / macOS; Windows can extract it with the built-in `tar`)
+- `git-lzc-<version>-offline.zip` (only when `zip` is available)
+- matching `.sha256` checksum files
+
+Client installation (Linux / macOS, fully offline):
+
+```bash
+tar -xzf git-lzc-1.0.1-offline.tar.gz
+cd git-lzc-1.0.1-offline
+./install.sh                # installs to ~/.local/share/git-lzc, launcher in ~/.local/bin
+./install.sh --add-path     # also adds ~/.local/bin to your shell config
+```
+
+Windows (run inside the extracted directory):
+
+```powershell
+tar -xzf git-lzc-1.0.1-offline.tar.gz
+cd git-lzc-1.0.1-offline
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+Uninstall:
+
+```bash
+~/.local/share/git-lzc/uninstall.sh           # keep the global config
+~/.local/share/git-lzc/uninstall.sh --purge   # also remove ~/.config/git-lzc
+```
+
+> The client only needs **Node.js >= 16** and **Git**. The archive already contains `dist/`, `bin/`, `node_modules` and `OFFLINE-README.md`; the installer validates the payload and replaces previous versions atomically without touching user configuration.
 
 ---
 

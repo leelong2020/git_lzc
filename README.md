@@ -201,14 +201,14 @@ pnpm run build
 # 2. 预览打包内容（只列清单，不生成文件）
 pnpm pack --dry-run
 
-# 3. 生成 tarball：git-lazy-commit-1.0.0.tgz
+# 3. 生成 tarball：git-lazy-commit-1.0.1.tgz
 pnpm pack
 
 # 4. 本地验证：全局安装 tarball 后运行
 #    注意：pnpm 全局安装需用绝对路径，相对路径会被解析到全局安装目录而报 ENOENT
-pnpm add -g "$(pwd)/git-lazy-commit-1.0.0.tgz"
+pnpm add -g "$(pwd)/git-lazy-commit-1.0.1.tgz"
 #    或用 npm（相对路径按当前目录解析）：
-#    npm install -g ./git-lazy-commit-1.0.0.tgz
+#    npm install -g ./git-lazy-commit-1.0.1.tgz
 git-lzc --help
 
 # 5. 发布到 npm（自动执行 prepublishOnly：test + clean + build）
@@ -217,7 +217,51 @@ pnpm publish --access public
 
 > `files` 白名单已包含 `dist/`、`bin/` 与文档，因此即使 `dist/` 被 `.gitignore` 忽略，也会正常打进包。
 > 注意：`pnpm pack` 只触发 `prepack`/`prepare`，**不会**执行 `prepublishOnly`，所以手动 `pack` 前必须先 `pnpm run build`；`pnpm publish` 则会自动重新编译。
-> 安装 tarball 请用 `pnpm add -g <绝对路径>`（`pnpm install` 不支持 `-g`）。pnpm 的全局安装会**相对全局安装目录**（如 `~/.local/share/pnpm/global/5`）解析路径，因此 `./x.tgz` 会报 `ENOENT`，请传绝对路径，如 `pnpm add -g "$(pwd)/git-lazy-commit-1.0.0.tgz"`；`npm install -g ./x.tgz` 则按当前目录解析。
+> 安装 tarball 请用 `pnpm add -g <绝对路径>`（`pnpm install` 不支持 `-g`）。pnpm 的全局安装会**相对全局安装目录**（如 `~/.local/share/pnpm/global/5`）解析路径，因此 `./x.tgz` 会报 `ENOENT`，请传绝对路径，如 `pnpm add -g "$(pwd)/git-lazy-commit-1.0.1.tgz"`；`npm install -g ./x.tgz` 则按当前目录解析。
+
+### 离线打包与客户端安装
+
+面向内网 / 无外网客户端的自包含分发包：脚本会把编译产物与全部生产依赖一起打入压缩包，客户端**无需联网、无需 npm install**。
+
+```bash
+# 编译 + 测试 + 临时安装自检 + 打包
+pnpm run package:offline
+
+# 或直接调用脚本，按需跳过测试 / 编译 / 自检
+bash scripts/build-offline-package.sh --skip-tests
+```
+
+产物位于 `release/`：
+
+- `git-lzc-<version>-offline.tar.gz`（Linux / macOS，Windows 可用系统自带 `tar` 解压）
+- `git-lzc-<version>-offline.zip`（系统存在 `zip` 时额外生成）
+- 对应的 `.sha256` 校验文件
+
+客户端安装（以 Linux / macOS 为例，全程离线）：
+
+```bash
+tar -xzf git-lzc-1.0.1-offline.tar.gz
+cd git-lzc-1.0.1-offline
+./install.sh                # 安装到 ~/.local/share/git-lzc，启动器写入 ~/.local/bin
+./install.sh --add-path     # 同时把 ~/.local/bin 写入 shell 配置
+```
+
+Windows（在解压后的目录执行）：
+
+```powershell
+tar -xzf git-lzc-1.0.1-offline.tar.gz
+cd git-lzc-1.0.1-offline
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+卸载：
+
+```bash
+~/.local/share/git-lzc/uninstall.sh           # 保留全局配置
+~/.local/share/git-lzc/uninstall.sh --purge   # 同时删除 ~/.config/git-lzc
+```
+
+> 客户端只需预装 **Node.js >= 16** 与 **Git**；分发包内已包含 `dist/`、`bin/`、`node_modules` 和 `OFFLINE-README.md`，安装脚本会自动校验并原子替换旧版本，升级不会影响已有配置。
 
 ---
 

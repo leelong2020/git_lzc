@@ -1,6 +1,6 @@
 {
   "name": "git-lazy-commit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Git Lazy Commit — 用 AI 分析 Git 变更，自动生成规范的 commit message",
   "main": "dist/index.js",
   "bin": {
@@ -19,6 +19,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "ts-node src/index.ts",
+    "package:offline": "bash scripts/build-offline-package.sh",
     "prepublishOnly": "npm test && npm run clean && npm run build",
     "clean": "rm -rf dist",
     "test": "jest"
